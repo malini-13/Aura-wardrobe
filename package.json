@@ -1,0 +1,9 @@
+{
+  "name": "aura-wardrobe",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix client",
+    "server": "npm run dev --prefix server",
+    "ai": "py -m uvicorn main:app --reload --app-dir ai-service"
+  }
+}
