@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import WardrobeItem from './models/WardrobeItem.js';
-import { connectToDatabase, getDatabaseHealth, isDatabaseConnected } from './db.js';
+import { connectToDatabase, isDatabaseConnected } from './db.js';
 
 dotenv.config();
 const app = express();
@@ -16,9 +16,12 @@ function requireDatabase(_, res, next) {
   next();
 }
 
-app.get('/api/health', async (_, res) => {
-  const database = await getDatabaseHealth();
-  res.json({ status: 'ok', service: 'aura-api', database });
+app.get('/api/health', (_, res) => {
+  res.json({
+    status: 'ok',
+    service: 'aura-api',
+    database: isDatabaseConnected() ? 'connected' : 'disconnected',
+  });
 });
 
 app.get('/api/wardrobe', requireDatabase, async (_, res, next) => {

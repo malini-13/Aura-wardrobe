@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+let databaseConnected = false;
+
 export async function connectToDatabase() {
   const { MONGODB_URI } = process.env;
 
@@ -12,35 +14,33 @@ export async function connectToDatabase() {
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 10_000,
     });
+    databaseConnected = true;
     console.log('MongoDB connected successfully.');
     return true;
   } catch (error) {
+    databaseConnected = false;
     console.error('MongoDB connection failed. Check Atlas network access and configuration.');
     return false;
   }
 }
 
 export function isDatabaseConnected() {
-  return mongoose.connection.readyState === 1;
+  return databaseConnected;
 }
 
-export async function getDatabaseHealth() {
-  if (!isDatabaseConnected() || !mongoose.connection.db) {
-    return 'disconnected';
-  }
+mongoose.connection.on('connected', () => {
+  databaseConnected = true;
+});
 
-  try {
-    await mongoose.connection.db.admin().ping();
-    return 'connected';
-  } catch {
-    return 'disconnected';
-  }
-}
+mongoose.connection.on('reconnected', () => {
+  databaseConnected = true;
+});
 
 mongoose.connection.on('error', () => {
   console.error('MongoDB connection error. Database requests may be unavailable.');
 });
 
 mongoose.connection.on('disconnected', () => {
+  databaseConnected = false;
   console.warn('MongoDB disconnected.');
 });
