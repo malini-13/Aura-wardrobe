@@ -17,6 +17,16 @@ function requireDatabase(_, res, next) {
   next();
 }
 
+const relatedTags = {
+  presentation: ['presentation', 'formal'], formal: ['formal', 'presentation'], college: ['college'],
+  party: ['party'], casual: ['casual'], day: ['day'], evening: ['evening', 'party'], work: ['formal', 'presentation'],
+};
+
+function requestTags(occasion = '', request = '') {
+  const text = `${occasion} ${request}`.toLowerCase();
+  return [...new Set(Object.entries(relatedTags).filter(([keyword]) => text.includes(keyword)).flatMap(([, tags]) => tags))];
+}
+
 app.get('/api/health', async (_, res) => {
   let database = 'disconnected';
 
@@ -72,7 +82,28 @@ app.delete('/api/wardrobe/:id', requireDatabase, async (req, res, next) => {
     next(error);
   }
 });
-app.post('/api/stylist/recommend',(req,res)=>res.json({message:'Connect this endpoint to recommendationService.js after MongoDB is configured.',request:req.body,looks:[]}));
+app.post('/api/stylist/recommend', requireDatabase, async (req, res, next) => {
+  try {
+    const { occasion = '', request = '' } = req.body;
+    const requestedTags = requestTags(occasion, request);
+    const wardrobe = await WardrobeItem.find().sort({ createdAt: -1 });
+    if (!wardrobe.length) return res.status(404).json({ error: 'Your wardrobe is empty. Add or seed your real outfits first.' });
+
+    const ranked = wardrobe.map((item) => {
+      const itemTags = [...(item.tags || []), ...(item.occasions || [])].map((tag) => tag.toLowerCase());
+      return { item, score: requestedTags.filter((tag) => itemTags.includes(tag)).length };
+    }).sort((a, b) => b.score - a.score || b.item.createdAt - a.item.createdAt);
+
+    const exactMatches = ranked.filter(({ score }) => score > 0);
+    const isFallback = exactMatches.length === 0;
+    const results = (isFallback ? ranked : exactMatches).slice(0, 3);
+    res.json({
+      requestedTags, isFallback,
+      message: isFallback ? 'No exact tag match was found, so these are your newest available outfits.' : 'These outfits match your occasion or request tags.',
+      looks: results.map(({ item, score }, index) => ({ label: `LOOK ${String(index + 1).padStart(2, '0')}`, title: index === 0 ? (isFallback ? 'Fallback choice' : 'Best match') : 'Another match', item, score })),
+    });
+  } catch (error) { next(error); }
+});
 app.post('/api/outfits/:id/feedback',(req,res)=>res.json({ok:true,feedback:req.body}));
 
 app.use((error, _, res, __) => {
