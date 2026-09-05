@@ -8,14 +8,13 @@ Aura is a student-project MVP for a personal wardrobe system: the user stores re
 - Deterministic tag matching for college, formal, party, casual, presentation, day, and evening requests
 - React/Vite AI Stylist, Wardrobe, Avatar, and My Style pages
 - Interactive Three.js blocky fashion avatar with simple outfit-colour approximation
-- Editable seven-outfit seed configuration and a safe upsert seed command
+- Editable wardrobe seed configuration and a safe upsert seed command
 
-## Add your seven real Cloudinary outfits
+## Add your real Cloudinary outfits
 
 1. Open [server/src/data/wardrobeSeed.js](server/src/data/wardrobeSeed.js).
-2. Replace each `PASTE_CLOUDINARY_URL_*_HERE` value with one of your real Cloudinary image URLs.
-3. Edit each outfit's `name`, `color`, and `tags`. Tags are lowercase words such as `college`, `casual`, `formal`, `party`, `presentation`, `day`, and `evening`.
-4. Run the seed command. It refuses to write anything until all seven URLs are real HTTP(S) URLs.
+2. Edit or add wardrobe records with your Cloudinary image URLs, names, colours, and tags. Tags are lowercase words such as `college`, `casual`, `formal`, `party`, `presentation`, `day`, and `evening`.
+3. Run the seed command. It refuses to write anything until every configured URL is a real HTTP(S) URL.
 
 ```powershell
 cd server

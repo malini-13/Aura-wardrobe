@@ -90,8 +90,8 @@ app.post('/api/stylist/recommend', requireDatabase, async (req, res, next) => {
     if (!wardrobe.length) return res.status(404).json({ error: 'Your wardrobe is empty. Add or seed your real outfits first.' });
 
     const ranked = wardrobe.map((item) => {
-      const itemTags = [...(item.tags || []), ...(item.occasions || [])].map((tag) => tag.toLowerCase());
-      return { item, score: requestedTags.filter((tag) => itemTags.includes(tag)).length };
+      const itemTags = new Set([...(item.tags || []), ...(item.occasions || [])].map((tag) => tag.toLowerCase()));
+      return { item, score: requestedTags.filter((tag) => itemTags.has(tag)).length };
     }).sort((a, b) => b.score - a.score || b.item.createdAt - a.item.createdAt);
 
     const exactMatches = ranked.filter(({ score }) => score > 0);

@@ -8,13 +8,17 @@ dotenv.config();
 
 const validItems = wardrobeSeed.filter((item) => /^https?:\/\//i.test(item.imageUrl));
 if (validItems.length !== wardrobeSeed.length) {
-  console.error('Seed cancelled: add all seven real Cloudinary image URLs in src/data/wardrobeSeed.js first.');
+  console.error('Seed cancelled: every wardrobe item needs a real Cloudinary HTTP(S) URL.');
   process.exit(1);
 }
 
 if (!(await connectToDatabase())) process.exit(1);
 
 try {
+  await WardrobeItem.deleteMany({
+    imageUrl: { $in: validItems.map((item) => item.imageUrl) },
+    seedKey: { $nin: validItems.map((item) => item.seedKey) },
+  });
   for (const item of validItems) {
     await WardrobeItem.findOneAndUpdate(
       { seedKey: item.seedKey },
