@@ -1,47 +1,26 @@
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Canvas, useLoader } from '@react-three/fiber';
-import { OrbitControls, Float, Environment } from '@react-three/drei';
-import { TextureLoader } from 'three';
 import auraLogo from './assets/aura-logo.svg';
 import './styles.css';
 import './mvp.css';
 import './logo.css';
+import './avatar.css';
 
 const API_URL = 'http://localhost:5000/api';
 
-function avatarColors(item) {
-  const details = `${item?.color || ''} ${(item?.tags || []).join(' ')}`.toLowerCase();
-  const top = details.includes('white') ? '#f6f0ea' : details.includes('black') ? '#242328' : details.includes('blue') ? '#55738e' : details.includes('pink') ? '#d78aa8' : details.includes('green') ? '#738b72' : details.includes('beige') ? '#cfb89b' : '#e8d7c3';
-  const bottom = details.includes('jeans') || details.includes('blue') ? '#55738e' : details.includes('formal') || details.includes('black') ? '#29272e' : '#596f83';
-  return { top, bottom };
-}
-
-function OutfitLayer({ imageUrl }) {
-  const texture = useLoader(TextureLoader, imageUrl);
-  return <mesh position={[0, 2.35, .32]}>
-    <planeGeometry args={[1.35, 1.45]} />
-    <meshBasicMaterial map={texture} transparent alphaTest={.05} />
-  </mesh>;
-}
-
 function Avatar({ item }) {
-  const { top, bottom } = avatarColors(item);
-  return <Canvas camera={{ position: [0, 1.7, 5], fov: 40 }}>
-    <color attach="background" args={['#272247']} /><ambientLight intensity={1.7} /><directionalLight position={[3, 5, 4]} intensity={2} /><Environment preset="city" />
-    <Float speed={1.5} rotationIntensity={.14} floatIntensity={.32}><group position={[0, -1.6, 0]}>
-      <mesh position={[0, 3.05, 0]}><sphereGeometry args={[.58, 32, 32]} /><meshStandardMaterial color="#bb6d3e" /></mesh>
-      <mesh position={[0, 3.65, 0]}><sphereGeometry args={[.64, 16, 16, 0, Math.PI * 2, 0, 1.6]} /><meshStandardMaterial color="#4c2c23" roughness={.8} /></mesh>
-      <mesh position={[0, 2.35, 0]}><boxGeometry args={[1.35, 1.35, .55]} /><meshStandardMaterial color={top} /></mesh>
-      {item?.imageUrl && <Suspense fallback={null}><OutfitLayer imageUrl={item.imageUrl} /></Suspense>}
-      <mesh position={[-.38, 1.1, 0]}><boxGeometry args={[.58, 1.2, .58]} /><meshStandardMaterial color={bottom} /></mesh>
-      <mesh position={[.38, 1.1, 0]}><boxGeometry args={[.58, 1.2, .58]} /><meshStandardMaterial color={bottom} /></mesh>
-      <mesh position={[-.38, .38, .05]}><boxGeometry args={[.65, .22, .75]} /><meshStandardMaterial color="#fffdf7" /></mesh>
-      <mesh position={[.38, .38, .05]}><boxGeometry args={[.65, .22, .75]} /><meshStandardMaterial color="#fffdf7" /></mesh>
-      <mesh position={[-1.02, 2.35, 0]} rotation={[0, 0, .15]}><boxGeometry args={[.42, 1.25, .42]} /><meshStandardMaterial color="#bb6d3e" /></mesh>
-      <mesh position={[1.02, 2.35, 0]} rotation={[0, 0, -.15]}><boxGeometry args={[.42, 1.25, .42]} /><meshStandardMaterial color="#bb6d3e" /></mesh>
-    </group></Float><OrbitControls enablePan={false} minDistance={3.5} maxDistance={7} />
-  </Canvas>;
+  const category = (item?.category || 'outfit').toLowerCase();
+  const bodyClass = category === 'dress' ? 'avatar-body avatar-body-dress' : category === 'ethnic wear' ? 'avatar-body avatar-body-ethnic' : 'avatar-body';
+  return <div className={`avatar-2d ${category === 'dress' ? 'avatar-look-dress' : ''}`}>
+    <div className="avatar-hair" />
+    <div className="avatar-head" />
+    <div className={bodyClass} />
+    <div className="avatar-arms avatar-arm-left" />
+    <div className="avatar-arms avatar-arm-right" />
+    <div className="avatar-legs avatar-leg-left" />
+    <div className="avatar-legs avatar-leg-right" />
+    {item?.imageUrl ? <img src={item.imageUrl} alt={item.name} className="avatar-outfit" /> : <div className="avatar-empty">Select an outfit to preview it here</div>}
+  </div>;
 }
 
 function App() {
@@ -84,7 +63,8 @@ function App() {
 
   const addItem = async (event) => {
     event.preventDefault(); setError('');
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const payload = {
       name: form.get('name'), category: form.get('category'), color: form.get('color'), imageUrl: form.get('imageUrl'),
       tags: form.get('tags').split(',').map((tag) => tag.trim().toLowerCase()).filter(Boolean),
@@ -93,7 +73,7 @@ function App() {
       const response = await fetch(`${API_URL}/wardrobe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not add this outfit.');
-      setItems((current) => [data, ...current]); event.currentTarget.reset();
+      setItems((current) => [data, ...current]); formElement.reset();
     } catch (err) { setError(err.message); }
   };
 
